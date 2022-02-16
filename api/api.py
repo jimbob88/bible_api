@@ -55,10 +55,11 @@ async def read_item(
         where_clause += where_clauses[0]
         for clause in where_clauses[1:]:
             where_clause += f" AND {clause}"
-        where_clause += ";"
-    queries = []
-    for bible in bible_name:
-        queries.append(f"SELECT *, '{bible}' AS bible_name FROM {bible}" + where_clause)
+
+    queries = [
+        f"SELECT *, '{bible}' AS bible_name FROM {bible}" + where_clause
+        for bible in bible_name
+    ]
     sql = "\nUNION\n".join(queries)
     print(sql)
     curs.execute(sql)
