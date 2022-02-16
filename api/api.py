@@ -1,6 +1,6 @@
 import mysql.connector
-from fastapi import FastAPI, Depends
-from typing import Optional
+from fastapi import FastAPI, Depends, Query
+from typing import Optional, List
 import os
 from database import *
 
@@ -29,31 +29,42 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/text_query/{bible_name}")
+@app.get("/text_query/")
 async def read_item(
-    bible_name: str,
+    # bible_name: List[str] = Query(None),
+    bible_name: List[str] = Query(["deu1912_vpl"]),
     book: Optional[str] = None,
     chapter: Optional[int] = None,
+    verseID: Optional[str] = None,
+    canon_order: Optional[str] = None,
+    startVerse: Optional[str] = None,
     curs=Depends(get_cursor),
 ):
-    sql = f"SELECT * FROM {bible_name}"
     where_clauses = []
     if book:
         where_clauses.append(f'book = "{book}"')
     if chapter:
         where_clauses.append(f"chapter = {chapter}")
+    if verseID:
+        where_clauses.append(f'verseID = "{verseID}"')
+    if canon_order:
+        where_clauses.append(f'verseID = "{verseID}"')
 
     if len(where_clauses) >= 1:
-        sql += f" WHERE "
-        sql += where_clauses[0]
+        where_clause = f" WHERE "
+        where_clause += where_clauses[0]
         for clause in where_clauses[1:]:
-            sql += f" AND {clause}"
-        sql += ";"
-
+            where_clause += f" AND {clause}"
+        where_clause += ";"
+    queries = []
+    for bible in bible_name:
+        queries.append(f"SELECT *, '{bible}' AS bible_name FROM {bible}" + where_clause)
+    sql = "\nUNION\n".join(queries)
+    print(sql)
     curs.execute(sql)
     headers = [i[0] for i in curs.description]
     r = [dict(zip(headers, result)) for result in curs]
-    return {"bible_name": bible_name, "sql": sql, "r": r}
+    return {"status": "OK", "bible_name": bible_name, "sql": sql, "r": r}
 
 
 cursor.close()
