@@ -45,29 +45,54 @@ async def get_bibles(curs=Depends(get_cursor)):
 @app.get("/text_query/")
 async def read_item(
     bible_name: List[str] = Query(["deu1912_vpl"]),
-    book: Optional[str] = None,
-    chapter: Optional[int] = None,
-    verseID: Optional[str] = None,
-    canon_order: Optional[str] = None,
-    startVerse: Optional[int] = None,
-    endVerse: Optional[int] = None,
+    book: Optional[List[str]] = Query(None),
+    chapter: Optional[List[int]] = Query(None),
+    verseID: Optional[List[str]] = Query(None),
+    canon_order: Optional[List[str]] = Query(None),
+    startVerse: Optional[List[int]] = Query(None),
+    endVerse: Optional[List[int]] = Query(None),
     verseContains: Optional[List[str]] = Query(None),
     curs=Depends(get_cursor),
 ):
     where_clauses = []
     if book:
-        where_clauses.append(f'book = "{book}"')
+        temp_str = "("
+        temp_str += f'book = "{book[0]}"'
+        for b in book[1:]:
+            temp_str += f' OR book = "{b}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
     if chapter:
-        where_clauses.append(f"chapter = {chapter}")
+        temp_str = f'(chapter = "{chapter[0]}"'
+        for c in chapter[1:]:
+            temp_str += f' OR chapter = "{c}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
     if verseID:
-        where_clauses.append(f'verseID = "{verseID}"')
+        temp_str = f'(verseID = "{verseID[0]}"'
+        for v in verseID[1:]:
+            temp_str += f' OR verseID = "{v}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
     if canon_order:
-        where_clauses.append(f'canon_order = "{canon_order}"')
+        temp_str = f'(canon_order = "{canon_order[0]}"'
+        for c in canon_order[1:]:
+            temp_str += f' OR canon_order = "{c}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
     if startVerse:
-        where_clauses.append(f"startVerse = {startVerse}")
+        temp_str = f'(startVerse = "{startVerse[0]}"'
+        for s in startVerse[1:]:
+            temp_str += f' OR startVerse = "{s}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
     if endVerse:
-        where_clauses.append(f"endVerse = {endVerse}")
-    print(verseContains)
+        temp_str = f'(endVerse = "{endVerse[0]}"'
+        for e in endVerse[1:]:
+            temp_str += f' OR endVerse = "{e}"'
+        temp_str += ")"
+        where_clauses.append(temp_str)
+
     if verseContains:
         for match in verseContains:
             where_clauses.append(f"verseText LIKE '%{match}%'")
