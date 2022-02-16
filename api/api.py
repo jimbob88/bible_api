@@ -49,7 +49,7 @@ async def read_item(
     if verseID:
         where_clauses.append(f'verseID = "{verseID}"')
     if canon_order:
-        where_clauses.append(f'verseID = "{verseID}"')
+        where_clauses.append(f'canon_order = "{canon_order}"')
     if startVerse:
         where_clauses.append(f"startVerse = {startVerse}")
     if endVerse:
