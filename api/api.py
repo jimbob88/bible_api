@@ -37,7 +37,8 @@ async def read_item(
     chapter: Optional[int] = None,
     verseID: Optional[str] = None,
     canon_order: Optional[str] = None,
-    startVerse: Optional[str] = None,
+    startVerse: Optional[int] = None,
+    endVerse: Optional[int] = None,
     curs=Depends(get_cursor),
 ):
     where_clauses = []
@@ -49,6 +50,10 @@ async def read_item(
         where_clauses.append(f'verseID = "{verseID}"')
     if canon_order:
         where_clauses.append(f'verseID = "{verseID}"')
+    if startVerse:
+        where_clauses.append(f"startVerse = {startVerse}")
+    if endVerse:
+        where_clauses.append(f"endVerse = {endVerse}")
 
     if len(where_clauses) >= 1:
         where_clause = f" WHERE "
