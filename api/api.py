@@ -44,7 +44,6 @@ async def get_bibles(curs=Depends(get_cursor)):
 
 @app.get("/text_query/")
 async def read_item(
-    # bible_name: List[str] = Query(None),
     bible_name: List[str] = Query(["deu1912_vpl"]),
     book: Optional[str] = None,
     chapter: Optional[int] = None,
@@ -52,6 +51,7 @@ async def read_item(
     canon_order: Optional[str] = None,
     startVerse: Optional[int] = None,
     endVerse: Optional[int] = None,
+    verseContains: Optional[List[str]] = Query(None),
     curs=Depends(get_cursor),
 ):
     where_clauses = []
@@ -67,6 +67,10 @@ async def read_item(
         where_clauses.append(f"startVerse = {startVerse}")
     if endVerse:
         where_clauses.append(f"endVerse = {endVerse}")
+    print(verseContains)
+    if verseContains:
+        for match in verseContains:
+            where_clauses.append(f"verseText LIKE '%{match}%'")
 
     if len(where_clauses) >= 1:
         where_clause = f" WHERE "
