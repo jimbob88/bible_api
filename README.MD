@@ -21,5 +21,12 @@ Download database files: https://ebible.org/download.php
 
 
 # API 
+## Example REST request to /text_query/
 ```
+> http://127.0.0.1:8000/text_query/?bible_name=deu1912_vpl&bible_name=engwebpb_vpl&book=GEN&chapter=1
+```
+
+## Documention
+```
+> http://127.0.0.1:8000/redoc
 ```

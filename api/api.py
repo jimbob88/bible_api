@@ -8,8 +8,15 @@ user = os.environ["SQL_USER"]
 # passwd = os.environ["SQL_PASSWORD"]
 passwd = ""
 
+description = """
+The Bible API was designed to help you grab information from the bible quickly and efficiently
 
-app = FastAPI()
+Currently this software can:
+ - Say **Hello World**
+ - Make requests for extracts of the bible
+"""
+
+app = FastAPI(title="BibleAPI", version="0.0.1")
 
 
 def get_cursor():
@@ -27,6 +34,12 @@ async def startup():
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+
+@app.get("/get_bibles/")
+async def get_bibles(curs=Depends(get_cursor)):
+    curs.execute("show tables;")
+    return {"status": "OK", "bibles": [r[0] for r in curs]}
 
 
 @app.get("/text_query/")
