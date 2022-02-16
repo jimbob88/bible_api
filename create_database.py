@@ -34,7 +34,6 @@ for root, dirs, files in scandir.walk.Walk("./sources"):
                 )
             else:
                 sql = f"DROP TABLE IF EXISTS bible_api.{database_name};\n" + sql
-            # print(sql)
 
             sql = sql.replace(" ENGINE=MyISAM", "")
             sql = sql.replace(f"LOCK TABLES {database_name} WRITE;", "")

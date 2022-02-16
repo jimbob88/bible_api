@@ -1,3 +1,4 @@
 scandir-rs
 prompt_toolkit
 tqdm
+fastapi
