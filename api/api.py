@@ -1,26 +1,27 @@
-from matplotlib.pyplot import connect
 import mysql.connector
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from typing import Optional
 import os
-
+from database import *
 
 user = os.environ["SQL_USER"]
 # passwd = os.environ["SQL_PASSWORD"]
 passwd = ""
 
 
-cnx = mysql.connector.connect(
-    user=user,
-    password=passwd,
-    host="127.0.0.1",
-    database="bible_api",
-    charset="utf8mb4",
-    use_unicode=True,
-)
-cursor = cnx.cursor()
-
 app = FastAPI()
+
+
+def get_cursor():
+    db = None
+    db = cnx.cursor()
+    yield db
+
+
+@app.on_event("startup")
+async def startup():
+    if cnx.is_closed():
+        cnx.connect()
 
 
 @app.get("/")
@@ -28,9 +29,12 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/bible_query/{bible_name}")
+@app.get("/text_query/{bible_name}")
 async def read_item(
-    bible_name: str, book: Optional[str] = None, chapter: Optional[int] = None
+    bible_name: str,
+    book: Optional[str] = None,
+    chapter: Optional[int] = None,
+    curs=Depends(get_cursor),
 ):
     sql = f"SELECT * FROM {bible_name}"
     where_clauses = []
@@ -46,9 +50,10 @@ async def read_item(
             sql += f" AND {clause}"
         sql += ";"
 
-    cursor.execute(sql)
-
-    return {"bible_name": bible_name, "sql": sql}
+    curs.execute(sql)
+    headers = [i[0] for i in curs.description]
+    r = [dict(zip(headers, result)) for result in curs]
+    return {"bible_name": bible_name, "sql": sql, "r": r}
 
 
 cursor.close()
