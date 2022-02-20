@@ -13,6 +13,7 @@ use bible_api;
 
 ## Download files
 Download database files: https://ebible.org/download.php
+Choose to download the "BibleWorks import (VPL) + SQL" files and copy the ".sql files" to a folder called `./sources/`, the names of the files should correspond to the names of the tables!
 
 ## Load Database data
 ```
