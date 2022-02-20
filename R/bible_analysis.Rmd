@@ -138,7 +138,7 @@ frequency <- bind_rows(mutate(dataset_kjv, bible = "King James Version"),
 
 ### Plot the frequency of words against The King James Version
 
-```{r}
+```{r, out.width="50%" }
 library(scales)
 ggplot(frequency, aes(x = proportion, y = `King James Version`, 
                       color = abs(`King James Version` - proportion))) +
