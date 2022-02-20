@@ -1,0 +1,159 @@
+---
+title: "Bible API Analysis"
+output: html_notebook
+fig_width: 10 
+fig_height: 10 
+---
+
+# Analysing one bible
+
+### Setup Rest
+```{r}
+# install.packages("httr")
+require("httr")
+```
+
+```{r}
+# install.packages("jsonlite")
+require("jsonlite")
+```
+
+We need these two packages in order to interface with [our FastAPI](https://github.com/jimbob88/bible_api/tree/master/api).
+
+### Load URL
+```{r}
+base_url = "http://127.0.0.1:8000/text_query"
+new_url = paste(base_url, '?bible_name=engwebpb_vpl&book=GEN', sep="")
+get_data = content(GET(new_url), "text", encoding="utf8")
+data_json = fromJSON(get_data, flatten = TRUE)
+```
+
+Load the JSON Rest response for the whole of Genesis in [The World English Bible](https://ebible.org/details.php?id=engwebpb).
+
+### Convert to dataframe
+```{r}
+dataset_raw = do.call(rbind.data.frame, data_json["r"])
+```
+
+Convert the response list to a dataframe with headers.
+
+### Load tidytext
+```{r}
+# install.packages("tidytext")
+# install.packages("tidyverse")
+library(tidytext)
+library(dplyr)
+```
+
+
+### Convert to tibble
+```{r}
+dataset_web <- as_tibble(dataset_raw)
+per_word <- dataset_web %>%
+  unnest_tokens(word, verseText)
+```
+
+Convert it to a table of tokens (each individual word is ar ow in the tibble)
+
+```{r}
+data(stop_words)
+per_word <- per_word %>%
+  anti_join(stop_words)
+per_word %>%
+  count(word, sort = TRUE) 
+```
+Count the freuqency of words
+
+### Plotting
+```{r}
+# install.packages("ggplot2")
+library(ggplot2)
+```
+
+```{r}
+per_word %>%
+  count(word, sort = TRUE) %>%
+  filter(n > 100) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(n, word)) +
+  geom_col() +
+  labs(y = NULL)
+```
+Plot the most common word frequencies
+
+# Comparing Multiple Bibles
+```{r}
+library(tidyr)
+library(stringr)
+```
+
+### Reload [The World English Bible](https://ebible.org/details.php?id=engwebpb)
+```{r}
+web_url = paste(base_url, '?bible_name=engwebpb_vpl&book=GEN', sep="")
+get_data = content(GET(web_url), "text", encoding="utf8")
+data_json = fromJSON(get_data, flatten = TRUE)
+dataset_raw = do.call(rbind.data.frame, data_json["r"])
+dataset_web <- as_tibble(dataset_raw)
+dataset_web <- dataset_web  %>%
+  unnest_tokens(word, verseText) %>%
+  anti_join(stop_words)
+```
+### Reload [The American Standard Version](https://ebible.org/details.php?id=eng-asv)
+```{r}
+asv_url = paste(base_url, '?bible_name=eng_asv_vpl&book=GEN', sep="")
+get_data = content(GET(asv_url), "text", encoding="utf8")
+data_json = fromJSON(get_data, flatten = TRUE)
+dataset_raw = do.call(rbind.data.frame, data_json["r"])
+dataset_asv <- as_tibble(dataset_raw)
+dataset_asv <- dataset_asv  %>%
+  unnest_tokens(word, verseText) %>%
+  anti_join(stop_words)
+```
+### Load [The King James Version](https://ebible.org/details.php?id=eng-kjv2006)
+```{r}
+kjv_url = paste(base_url, '?bible_name=eng_kjv2006_vpl&book=GEN', sep="")
+get_data = content(GET(kjv_url), "text", encoding="utf8")
+data_json = fromJSON(get_data, flatten = TRUE)
+dataset_raw = do.call(rbind.data.frame, data_json["r"])
+dataset_kjv <- as_tibble(dataset_raw)
+dataset_kjv <- dataset_kjv  %>%
+  unnest_tokens(word, verseText) %>%
+  anti_join(stop_words)
+```
+### Compare the frequency of words against The King James Version
+
+```{r}
+frequency <- bind_rows(mutate(dataset_kjv, bible = "King James Version"),
+                       mutate(dataset_asv, bible = "American Standard Version"), 
+                       mutate(dataset_web, bible = "English Web Bible")) %>% 
+  mutate(word = str_extract(word, "[a-z']+")) %>%
+  count(bible, word) %>%
+  group_by(bible) %>%
+  mutate(proportion = n / sum(n)) %>% 
+  select(-n) %>% 
+  pivot_wider(names_from = bible, values_from = proportion) %>%
+  pivot_longer(`American Standard Version`:`English Web Bible`,
+               names_to = "bible", values_to = "proportion")
+```
+
+### Plot the frequency of words against The King James Version
+
+```{r}
+library(scales)
+ggplot(frequency, aes(x = proportion, y = `King James Version`, 
+                      color = abs(`King James Version` - proportion))) +
+  geom_abline(color = "gray40", lty = 2) +
+  geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+  geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+  scale_x_log10(labels = percent_format()) +
+  scale_y_log10(labels = percent_format()) +
+  scale_color_gradient(limits = c(0, 0.001), 
+                       low = "darkslategray4", high = "gray75") +
+  facet_wrap(~bible, ncol = 2) +
+  theme(legend.position="none") +
+  labs(y = "King James Version", x = NULL)
+```
+
+# Sources
+[Text Mining](https://www.tidytextmining.com/tidytext.html)
+
